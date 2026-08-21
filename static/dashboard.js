@@ -48,11 +48,10 @@
         else clearTimeout(rotationTimer);
     });
     rotateBtn.classList.add('on');
-    var cs2Btn = document.getElementById('cs2-btn');
-    if (cs2Btn) cs2Btn.addEventListener('click', function () {
-        // Kiosk nav: flip the screen to the CS2 esports dashboard on :8001
-        // (it has a matching ⛵ Marine button to come back).
-        location.href = location.protocol + '//' + location.hostname + ':8001/';
+    var homeBtn = document.getElementById('home-btn');
+    if (homeBtn) homeBtn.addEventListener('click', function () {
+        // Back to the kiosk chooser (kiosk-home on :8091)
+        location.href = location.protocol + '//' + location.hostname + ':8091/';
     });
     var startTab = new URLSearchParams(location.search).get('tab');
     if (startTab && document.getElementById('tab-' + startTab)) {
@@ -73,7 +72,7 @@
         var ss = String(d.getSeconds()).padStart(2, '0');
         var dateStr = d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
         // Update the dedicated spans only - rewriting the whole bar would
-        // destroy the buttons that live in it (#cs2-btn, #auto-rotate).
+        // destroy the buttons that live in it (#home-btn, #auto-rotate).
         document.getElementById('clock-time').textContent = hh + ':' + mm + ':' + ss;
         document.getElementById('clock-right').textContent =
             dateStr + (nextPassInfo ? ' · 🛰️ ' + nextPassInfo : '');
