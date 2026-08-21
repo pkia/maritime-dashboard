@@ -134,9 +134,11 @@ def record_pass(name, freq, start_utc, end_utc):
         return
     stamp = datetime.now().strftime("%Y%m%d_%H%M")
     base = os.path.join(AUDIO_DIR, f"{name.replace(' ', '-')}_{stamp}")
-    wav = base + ".wav"
-    sym = base + ".s"
+    iq = base + ".iq"
+    wav = base + "_iq.wav"
     png = os.path.join(NOAA_DIR, f"{name.replace(' ', '-')}_{stamp}.bmp")
+
+    SR = 288000  # LRPT needs ~120 kHz of bandwidth
 
     log(f"capture start: {name} {freq} for {dur}s")
     # Stop BOTH SDR consumers - the spectrum monitor also grabs the dongle
@@ -144,46 +146,77 @@ def record_pass(name, freq, start_utc, end_utc):
     subprocess.run(["sudo", "systemctl", "stop", "sdr-monitor"])
     subprocess.run(["sudo", "systemctl", "stop", "ais-catcher"])
     time.sleep(2)
+    nsamp = str(dur * SR)
     recorded = False
     try:
-        # METEOR LRPT: 80 kbaud OQPSK needs wideband capture (288 ks/s).
-        # Retry: the device may take a moment to be released after stops.
+        # rtl_sdr: raw u8 I/Q at exact rate (meteor_demod wants I/Q, NOT FM audio)
         for attempt in range(3):
             try:
                 subprocess.run(
-                    ["/usr/local/bin/rtl_fm", "-f", str(freq), "-M", "fm",
-                     "-s", "288000", "-g", "40", "-p", "34", "-F", "9", "-E", "dc", wav],
-                    timeout=dur)
-                if os.path.exists(wav) and os.path.getsize(wav) > 100000:
+                    ["/usr/local/bin/rtl_sdr", "-f", str(freq), "-s", str(SR),
+                     "-g", "40", "-p", "34", "-n", nsamp, iq],
+                    timeout=dur + 60)
+                if os.path.exists(iq) and os.path.getsize(iq) > 10_000_000:
                     recorded = True
                     break
-                log(f"rtl_fm attempt {attempt+1} produced no data, retrying")
+                log(f"rtl_sdr attempt {attempt+1} produced no data, retrying")
             except subprocess.TimeoutExpired:
-                recorded = os.path.exists(wav)
+                recorded = os.path.exists(iq) and os.path.getsize(iq) > 10_000_000
                 break
             time.sleep(3)
     finally:
         subprocess.run(["sudo", "systemctl", "start", "ais-catcher"])
         subprocess.run(["sudo", "systemctl", "start", "sdr-monitor"])
-    if not recorded or not os.path.exists(wav):
+    if not recorded:
         log("capture failed: could not open SDR")
+        _cleanup(iq)
         return
-    log(f"capture done: {wav} ({os.path.getsize(wav) // 1024} KB)")
+    log(f"capture done: {iq} ({os.path.getsize(iq) // (1024*1024)} MB)")
 
-    # Decode: meteor_demod (FM wav -> soft symbols) then meteor_decode (-> image)
+    # Convert u8 I/Q -> s16 WAV (format meteor_demod officially reads)
     try:
-        r = subprocess.run(["/usr/local/bin/meteor_demod", "-B", "-m", "oqpsk", "-s", "288000",
-                            "-r", "80000", "-o", sym, wav],
-                           capture_output=True, timeout=600)
-        if r.returncode == 0 and os.path.exists(sym):
+        import wave
+        import numpy as np
+        raw = np.fromfile(iq, dtype=np.uint8).astype(np.int16)
+        raw = (raw - 128) * 256
+        with wave.open(wav, "wb") as w:
+            w.setnchannels(2)
+            w.setsampwidth(2)
+            w.setframerate(SR)
+            w.writeframes(raw.tobytes())
+        del raw
+        _cleanup(iq)
+        log(f"converted to {wav}")
+
+        # Demod with modulation fallback, then decode to image
+        for mode in ("oqpsk", "qpsk"):
+            sym = base + f"_{mode}.s"
+            r = subprocess.run(["/usr/local/bin/meteor_demod", "-B", "-m", mode,
+                                "-s", str(SR), "-r", "80000", "-o", sym, wav],
+                               capture_output=True, timeout=1200)
+            if not (r.returncode == 0 and os.path.exists(sym) and
+                    os.path.getsize(sym) > 500_000):
+                _cleanup(sym)
+                continue
             r2 = subprocess.run(["/usr/local/bin/meteor_decode", "-o", png, sym],
-                                capture_output=True, timeout=600)
-            ok = r2.returncode == 0 and os.path.exists(png)
-            log(f"decode {'OK: ' + png if ok else 'failed (no image)'}")
-        else:
-            log(f"demod failed: {r.stderr.decode(errors='replace')[:120]}")
+                                capture_output=True, timeout=1200)
+            if r2.returncode == 0 and os.path.exists(png):
+                log(f"decode OK ({mode}): {png}")
+                _cleanup(sym)
+                return
+            _cleanup(sym)
+        log("decode failed: no usable signal (weak pass?)")
+        _cleanup(wav)
     except Exception as e:
         log(f"decode error: {e}")
+
+
+def _cleanup(path):
+    try:
+        if os.path.exists(path):
+            os.remove(path)
+    except OSError:
+        pass
 
 
 def main():
