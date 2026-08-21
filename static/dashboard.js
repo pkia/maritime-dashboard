@@ -48,6 +48,12 @@
         else clearTimeout(rotationTimer);
     });
     rotateBtn.classList.add('on');
+    var cs2Btn = document.getElementById('cs2-btn');
+    if (cs2Btn) cs2Btn.addEventListener('click', function () {
+        // Kiosk nav: flip the screen to the CS2 esports dashboard on :8001
+        // (it has a matching ⛵ Marine button to come back).
+        location.href = location.protocol + '//' + location.hostname + ':8001/';
+    });
     var startTab = new URLSearchParams(location.search).get('tab');
     if (startTab && document.getElementById('tab-' + startTab)) {
         rotIdx = Math.max(0, rotationSteps.findIndex(function (s) { return s[0] === startTab; }));
@@ -66,10 +72,11 @@
         var mm = String(d.getMinutes()).padStart(2, '0');
         var ss = String(d.getSeconds()).padStart(2, '0');
         var dateStr = d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
-        document.getElementById('clock').innerHTML =
-            '<span>Waterford Coast · 52.159°N 7.149°W</span>' +
-            '<span class="time">' + hh + ':' + mm + ':' + ss + '</span>' +
-            '<span>' + dateStr + (nextPassInfo ? ' · 🛰️ ' + nextPassInfo : '') + '</span>';
+        // Update the dedicated spans only - rewriting the whole bar would
+        // destroy the buttons that live in it (#cs2-btn, #auto-rotate).
+        document.getElementById('clock-time').textContent = hh + ':' + mm + ':' + ss;
+        document.getElementById('clock-right').textContent =
+            dateStr + (nextPassInfo ? ' · 🛰️ ' + nextPassInfo : '');
     }
     setInterval(tick, 1000);
     tick();

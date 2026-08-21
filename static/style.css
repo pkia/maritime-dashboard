@@ -65,8 +65,8 @@ html, body { height: 100%; overflow: hidden; font-family: 'Segoe UI', system-ui,
 .dot-online { background: #ff9100; box-shadow: 0 0 6px #ff9100; }
 .dot-rf { background: #ffffff; }
 
-/* auto-rotate toggle in clock bar */
-#auto-rotate {
+/* auto-rotate toggle + kiosk-nav button in clock bar */
+#auto-rotate, #cs2-btn {
     background: transparent;
     border: 1px solid var(--border);
     border-radius: 4px;
