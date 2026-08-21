@@ -139,18 +139,35 @@ def record_pass(name, freq, start_utc, end_utc):
     png = os.path.join(NOAA_DIR, f"{name.replace(' ', '-')}_{stamp}.bmp")
 
     log(f"capture start: {name} {freq} for {dur}s")
+    # Stop BOTH SDR consumers - the spectrum monitor also grabs the dongle
+    # every ~3 min for scans and will collide with us otherwise
+    subprocess.run(["sudo", "systemctl", "stop", "sdr-monitor"])
     subprocess.run(["sudo", "systemctl", "stop", "ais-catcher"])
-    time.sleep(1)
+    time.sleep(2)
+    recorded = False
     try:
-        # METEOR LRPT: 80 kbaud OQPSK needs wideband capture (288 ks/s)
-        subprocess.run(
-            ["/usr/local/bin/rtl_fm", "-f", str(freq), "-M", "fm",
-             "-s", "288000", "-g", "40", "-p", "34", "-F", "9", "-E", "dc", wav],
-            timeout=dur)
-    except subprocess.TimeoutExpired:
-        pass
+        # METEOR LRPT: 80 kbaud OQPSK needs wideband capture (288 ks/s).
+        # Retry: the device may take a moment to be released after stops.
+        for attempt in range(3):
+            try:
+                subprocess.run(
+                    ["/usr/local/bin/rtl_fm", "-f", str(freq), "-M", "fm",
+                     "-s", "288000", "-g", "40", "-p", "34", "-F", "9", "-E", "dc", wav],
+                    timeout=dur)
+                if os.path.exists(wav) and os.path.getsize(wav) > 100000:
+                    recorded = True
+                    break
+                log(f"rtl_fm attempt {attempt+1} produced no data, retrying")
+            except subprocess.TimeoutExpired:
+                recorded = os.path.exists(wav)
+                break
+            time.sleep(3)
     finally:
         subprocess.run(["sudo", "systemctl", "start", "ais-catcher"])
+        subprocess.run(["sudo", "systemctl", "start", "sdr-monitor"])
+    if not recorded or not os.path.exists(wav):
+        log("capture failed: could not open SDR")
+        return
     log(f"capture done: {wav} ({os.path.getsize(wav) // 1024} KB)")
 
     # Decode: meteor_demod (FM wav -> soft symbols) then meteor_decode (-> image)
