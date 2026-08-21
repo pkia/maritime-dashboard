@@ -27,7 +27,7 @@ LOG = os.path.join(DASH, "noaa.log")
 # Station location: update to your exact coordinates!
 LAT, LON = 52.159428, -7.14919  # station location (Waterford coast)
 
-SAT_FREQ = {"METEOR-M2 2": 137100000, "METEOR-M2 3": 137900000, "METEOR-M2 4": 137900000}
+SAT_FREQ = {"METEOR-M2 3": 137900000, "METEOR-M2 4": 137900000}
 MIN_ELEV = 20  # degrees
 
 stations_url = "https://celestrak.org/NORAD/elements/gp.php?GROUP=weather&FORMAT=tle"
@@ -188,11 +188,13 @@ def record_pass(name, freq, start_utc, end_utc):
         _cleanup(iq)
         log(f"converted to {wav}")
 
-        # Demod with modulation fallback, then decode to image
-        for mode in ("oqpsk", "qpsk"):
-            sym = base + f"_{mode}.s"
+        # Demod: METEOR LRPT is 72k symbols (SatDump default); 80k is the
+        # rare interleaved variant. Try combos until one locks.
+        for mode, rate in (("oqpsk", "72000"), ("qpsk", "72000"),
+                           ("oqpsk", "80000"), ("qpsk", "80000")):
+            sym = base + f"_{mode}{rate}.s"
             r = subprocess.run(["/usr/local/bin/meteor_demod", "-B", "-m", mode,
-                                "-s", str(SR), "-r", "80000", "-o", sym, wav],
+                                "-s", str(SR), "-r", rate, "-o", sym, wav],
                                capture_output=True, timeout=1200)
             if not (r.returncode == 0 and os.path.exists(sym) and
                     os.path.getsize(sym) > 500_000):
