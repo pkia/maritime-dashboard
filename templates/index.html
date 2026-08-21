@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Maritime Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/noaa.css">
+</head>
+<body>
+    <div id="tabs">
+        <button class="tab active" data-tab="ais">📡 AIS Ships</button>
+        <button class="tab" data-tab="online">🌐 Online</button>
+        <button class="tab" data-tab="rf">📶 RF Spectrum</button>
+        <button class="tab" data-tab="noaa">🛰️ Satellites</button>
+        <button class="tab" data-tab="status">⚙️ System</button>
+    </div>
+
+    <div id="content">
+        <!-- AIS Tab -->
+        <div id="tab-ais" class="tab-content active">
+            <iframe id="ais-frame"
+                src="http://localhost:8080/?reset&welcome=false&kiosk=true&kiosk_rotation_speed=10&lat=52.159428&lon=-7.14919&zoom=10&fix_center=true&show_station=true&map_overlay=RainViewer%20Radar&map_overlay=Atmospheric%20Ducting"
+                allowfullscreen></iframe>
+            <canvas id="online-layer"></canvas>
+            <div id="online-legend">
+                <span class="legend-chip"><i class="dot dot-online"></i>ONLINE feed · <b id="online-count">0</b> ships</span>
+                <span class="legend-chip"><i class="dot dot-rf"></i>Live RF (this antenna)</span>
+            </div>
+            <div id="sat-overlay" class="hidden" data-goto="noaa">
+                <div class="sat-overlay-title">🛰️ Latest satellite pass</div>
+                <img id="sat-overlay-img" alt="satellite capture">
+                <div id="sat-overlay-caption" class="sat-overlay-caption"></div>
+            </div>
+        </div>
+
+        <!-- Online ships tab: own map, online-feed data (aisstream.io) -->
+        <div id="tab-online" class="tab-content">
+            <div class="online-banner" id="online-banner">🌐 Online feed — data from the internet, not this antenna</div>
+            <div id="onlinemap-tiles"></div>
+            <canvas id="onlinemap-canvas"></canvas>
+            <div id="onlinemap-status"></div>
+        </div>
+
+        <!-- RF Spectrum Tab -->
+        <div id="tab-rf" class="tab-content">
+            <div id="rf-container">
+                <h2>Live Marine Band Spectrum <span id="rf-last" class="subtle"></span></h2>
+                <canvas id="spectrum-canvas" width="1000" height="220"></canvas>
+                <h2>Waterfall <span class="subtle">(last 30 min — any signal shows as a bright trace)</span></h2>
+                <canvas id="waterfall-canvas" width="1000" height="240"></canvas>
+                <div id="rf-legend">
+                    <span class="legend-item"><i class="dot dot-ais"></i>AIS channels</span>
+                    <span class="legend-item"><i class="dot dot-ch16"></i>Ch 16 distress</span>
+                    <span class="legend-item"><i class="dot dot-ch"></i>marine channels</span>
+                    <span class="legend-item"><i class="dot dot-sig"></i>signal detected</span>
+                </div>
+                <p class="note">Scans every 3 minutes (AIS briefly pauses ~8s). Every carrier — even
+                   weak or non-decodable signals — appears here. Hover/tap the spectrum for frequencies.</p>
+            </div>
+        </div>
+
+        <!-- Satellites Tab -->
+        <div id="tab-noaa" class="tab-content">
+            <div id="noaa-container">
+                <h2>Satellite Passes (next 12h)</h2>
+                <div id="noaa-passes"></div>
+                <h2>Latest Captures</h2>
+                <div id="noaa-gallery"></div>
+                <div id="noaa-status">Checking pass schedule...</div>
+            </div>
+        </div>
+
+        <!-- System Tab -->
+        <div id="tab-status" class="tab-content">
+            <div id="sys-container">
+                <h2>System Status</h2>
+                <table id="sys-table">
+                    <tr><td>SDR Device</td><td id="sdr-status">checking...</td></tr>
+                    <tr><td>AIS-catcher</td><td id="ais-status">checking...</td></tr>
+                    <tr><td>Messages Received</td><td id="msg-count">--</td></tr>
+                    <tr><td>Uptime</td><td id="uptime">--</td></tr>
+                    <tr><td>CPU Temp</td><td id="cpu-temp">--</td></tr>
+                    <tr><td>Memory</td><td id="mem-usage">--</td></tr>
+                    <tr><td>SD Card Free</td><td id="sd-free">--</td></tr>
+                    <tr><td>Display</td><td id="display-info">1024x600 HDMI</td></tr>
+                    <tr><td>Touch</td><td id="touch-status">checking...</td></tr>
+                </table>
+                <h2>SDR Signal (162 MHz)</h2>
+                <div id="signal-bar-container">
+                    <div id="signal-bar" class="signal-low"><div class="signal-fill"></div></div>
+                    <span id="signal-db">-- dBFS</span>
+                </div>
+                <h2>Antenna Note</h2>
+                <p class="note">Station: 52.159428°N, 7.149190°W (Waterford coast). AIS is
+                   line-of-sight: expect ~15–30 nmi from a low antenna, 40+ nmi if raised
+                   higher. Every signal in the band — including weak ones — is visible in
+                   the RF Spectrum tab even when ships don't decode.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="clock">
+        <span id="clock-left">Waterford Coast · 52.159°N 7.149°W</span>
+        <button id="auto-rotate" title="Auto-rotate screens">▶</button>
+        <span id="clock-time" class="time"></span>
+        <span id="clock-right"></span>
+    </div>
+
+    <script src="/static/dashboard.js"></script>
+</body>
+</html>

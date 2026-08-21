@@ -1,0 +1,28 @@
+# Virtual environment (lives in the project root on the Pi)
+/bin/
+/lib/
+/lib64
+/include/
+pyvenv.cfg
+
+# Python
+__pycache__/
+*.pyc
+
+# Secret key for the VesselAPI online-ships feed - never commit
+vesselapi_key.txt
+
+# Runtime state written by the services (regenerated locally)
+*.log
+noaa_state.json
+online_ships.json
+spectrum_history.json
+signal_db.txt
+refresh_online.trigger
+weather.txt
+noaa_audio/
+static/images/noaa/
+demod.fifo
+
+# OS
+.DS_Store

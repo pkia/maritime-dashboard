@@ -1,0 +1,10 @@
+[Unit]
+Description=Maritime dashboard pull-based deploy job
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ev
+WorkingDirectory=/home/ev/maritime-dashboard
+ExecStart=/home/ev/maritime-dashboard/deploy/deploy.sh

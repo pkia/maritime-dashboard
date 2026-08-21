@@ -1,0 +1,5 @@
+# Web app (runs from the project venv)
+flask>=3.1
+
+# NOAA satellite pass prediction for scripts/noaa_scheduler.py
+skyfield>=1.53

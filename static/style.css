@@ -1,0 +1,210 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+    --bg: #0a1628;
+    --panel: #0f1f3a;
+    --border: #1a3050;
+    --accent: #00b4d8;
+    --text: #e0e8f0;
+    --muted: #5a7a9a;
+    --success: #00c853;
+    --warning: #ffab00;
+    --danger: #ff1744;
+}
+html, body { height: 100%; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); }
+
+#tabs {
+    display: flex; background: var(--panel); border-bottom: 1px solid var(--border);
+    height: 44px; padding: 0 4px;
+}
+.tab {
+    flex: 1; border: none; background: transparent; color: var(--muted); font-size: 14px;
+    font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent;
+    transition: all 0.2s; -webkit-tap-highlight-color: transparent;
+}
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab:active { background: rgba(0,180,216,0.1); }
+
+#content { height: calc(100% - 44px - 28px); position: relative; }
+.tab-content { display: none; position: absolute; inset: 0; }
+.tab-content.active { display: block; }
+
+#tab-ais.active { padding: 0; overflow: hidden; }
+#ais-frame {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100vw;
+    height: calc(100vh - 44px - 28px); /* viewport minus tab bar and clock bar */
+    border: none;
+}
+
+/* Online ships overlay layer */
+#online-layer {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100vw;
+    height: calc(100vh - 44px - 28px);
+    pointer-events: none;   /* map underneath stays touchable */
+    z-index: 40;
+}
+#online-legend {
+    position: absolute;
+    top: 10px; right: 10px;
+    display: flex; flex-direction: column; gap: 5px;
+    z-index: 45;
+    pointer-events: none;
+}
+.legend-chip {
+    background: rgba(10, 22, 40, 0.82);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 4px 10px;
+    font-size: 11px;
+    color: var(--text);
+    display: flex; align-items: center; gap: 6px;
+}
+.dot-online { background: #ff9100; box-shadow: 0 0 6px #ff9100; }
+.dot-rf { background: #ffffff; }
+
+/* auto-rotate toggle in clock bar */
+#auto-rotate {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--muted);
+    font-size: 11px;
+    padding: 1px 8px;
+    cursor: pointer;
+}
+#auto-rotate.on { color: var(--accent); border-color: var(--accent); }
+
+/* Latest satellite capture overlay on the map */
+#sat-overlay {
+    position: absolute;
+    left: 10px; bottom: 10px;
+    width: 230px;
+    background: rgba(15, 31, 58, 0.88);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px;
+    cursor: pointer;
+    z-index: 50;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.5);
+    transition: transform 0.15s;
+}
+#sat-overlay:active { transform: scale(0.97); }
+.sat-overlay-title {
+    font-size: 11px; color: var(--accent); text-transform: uppercase;
+    letter-spacing: 1px; margin-bottom: 5px; font-weight: 600;
+}
+#sat-overlay-img {
+    width: 100%; height: auto; border-radius: 4px; display: block;
+    background: #000; min-height: 40px;
+}
+.sat-overlay-caption {
+    font-size: 10px; color: var(--muted); margin-top: 4px;
+    font-family: monospace;
+}
+.hidden { display: none !important; }
+
+/* System & NOAA panels */
+#noaa-container, #sys-container { padding: 12px; overflow-y: auto; height: 100%; }
+h2 { font-size: 15px; color: var(--accent); margin: 10px 0 6px; text-transform: uppercase; letter-spacing: 1px; }
+h2:first-child { margin-top: 0; }
+#sys-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+#sys-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); }
+#sys-table td:first-child { color: var(--muted); width: 40%; }
+.status-ok { color: var(--success); }
+.status-warn { color: var(--warning); }
+.status-err { color: var(--danger); }
+.note { font-size: 12px; color: var(--muted); line-height: 1.5; margin: 8px 0; }
+
+/* Signal bar */
+#signal-bar-container { display: flex; align-items: center; gap: 10px; margin: 4px 0 12px; }
+#signal-bar { flex: 1; height: 18px; background: #1a1a2e; border-radius: 3px; overflow: hidden; border: 1px solid var(--border); }
+.signal-fill { height: 100%; width: 0%; transition: width 1s; border-radius: 2px; }
+.signal-low .signal-fill { background: var(--danger); }
+.signal-mid .signal-fill { background: var(--warning); }
+.signal-high .signal-fill { background: var(--success); }
+#signal-db { font-size: 13px; font-family: monospace; min-width: 70px; }
+
+/* Clock bar */
+#clock {
+    position: fixed; bottom: 0; left: 0; right: 0; height: 28px;
+    background: var(--panel); border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 12px; font-size: 12px; color: var(--muted);
+    z-index: 100;
+}
+#clock .time { color: var(--text); font-family: monospace; font-size: 14px; }
+
+/* Online ships map tab (own rendering, OSM tiles + canvas markers) */
+#tab-online.active { padding: 0; overflow: hidden; background: #0a1628; }
+.online-banner {
+    position: absolute;
+    top: 8px; left: 50%; transform: translateX(-50%);
+    z-index: 30;
+    background: rgba(255, 145, 0, 0.92);
+    color: #1a1000;
+    font-size: 12px; font-weight: 600;
+    padding: 4px 14px; border-radius: 12px;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+#onlinemap-tiles {
+    position: absolute; top: 0; left: 0;
+    width: 100vw; height: calc(100vh - 44px - 28px);
+    z-index: 5; overflow: hidden;
+    background: #aad3df;
+}
+#onlinemap-tiles img {
+    position: absolute; width: 256px; height: 256px;
+    user-select: none; pointer-events: none;
+}
+#onlinemap-canvas {
+    position: absolute; top: 0; left: 0;
+    width: 100vw; height: calc(100vh - 44px - 28px);
+    z-index: 20; pointer-events: none;
+}
+#onlinemap-status {
+    position: absolute;
+    bottom: 12px; left: 12px;
+    z-index: 25;
+    background: rgba(10, 22, 40, 0.85);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px; color: var(--text);
+    max-width: 420px;
+}
+#onlinemap-status .hint { color: var(--muted); font-size: 11px; margin-top: 4px; }
+
+/* RF Spectrum tab */
+#rf-container { padding: 10px 12px; overflow-y: auto; height: 100%; }
+#spectrum-canvas, #waterfall-canvas {
+    width: 100%; height: auto; background: #060d18;
+    border: 1px solid var(--border); border-radius: 6px; display: block;
+    touch-action: pan-y;
+}
+.subtle { font-size: 11px; color: var(--muted); font-weight: 400; text-transform: none; letter-spacing: 0; }
+#rf-legend { display: flex; gap: 16px; margin: 8px 0; flex-wrap: wrap; }
+.legend-item { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.dot-ais { background: #ff5252; }
+.dot-ch16 { background: #ffab00; }
+.dot-ch { background: #40c4ff; }
+.dot-sig { background: #69f0ae; }
+
+/* NOAA */
+#noaa-passes { margin-bottom: 8px; }
+.pass-row { display: flex; justify-content: space-between; padding: 6px 8px; font-size: 12px;
+    border-bottom: 1px solid var(--border); border-radius: 4px; margin: 2px 0; }
+.pass-row.elevated { background: rgba(0,180,216,0.08); }
+.pass-sat { font-weight: 600; min-width: 60px; }
+.pass-time { min-width: 80px; font-family: monospace; }
+.pass-elev { min-width: 50px; text-align: right; }
+.pass-dir { min-width: 40px; text-align: center; }
+#noaa-gallery { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+.noaa-img { width: 200px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; }
+.noaa-img:active { opacity: 0.7; }
+#noaa-status { font-size: 12px; color: var(--muted); }
+.noaa-none { color: var(--muted); font-style: italic; padding: 20px 0; text-align: center; }
