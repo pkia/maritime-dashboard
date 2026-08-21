@@ -10,8 +10,10 @@ from flask import Flask, jsonify, render_template, send_from_directory
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 
-NOAA_DIR = "/home/ev/maritime-dashboard/static/images/noaa"
-STATE_FILE = "/home/ev/maritime-dashboard/noaa_state.json"
+# Paths resolve relative to this file so the app runs from any checkout.
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+NOAA_DIR = os.path.join(BASE_DIR, "static", "images", "noaa")
+STATE_FILE = os.path.join(BASE_DIR, "noaa_state.json")
 _last_refresh_touch = 0.0
 
 
@@ -59,7 +61,7 @@ def api_status():
     # Signal power at AIS band (cached file written by the monitor script)
     db = -100.0
     try:
-        db = float(open("/home/ev/maritime-dashboard/signal_db.txt").read().strip())
+        db = float(open(os.path.join(BASE_DIR, "signal_db.txt")).read().strip())
     except Exception:
         pass
 
@@ -107,7 +109,7 @@ def api_noaa():
 def api_spectrum():
     try:
         import json
-        return jsonify(json.load(open("/home/ev/maritime-dashboard/spectrum_history.json")))
+        return jsonify(json.load(open(os.path.join(BASE_DIR, "spectrum_history.json"))))
     except Exception:
         return jsonify({"f_start": 155500000, "f_step": 37500, "scans": []})
 
@@ -116,7 +118,7 @@ def api_spectrum():
 def api_onlineships():
     try:
         import json
-        return jsonify(json.load(open("/home/ev/maritime-dashboard/online_ships.json")))
+        return jsonify(json.load(open(os.path.join(BASE_DIR, "online_ships.json"))))
     except Exception:
         return jsonify({"ok": False, "count": 0, "ships": []})
 
@@ -129,7 +131,7 @@ def api_onlineships_refresh():
     now = time.time()
     if now - _last_refresh_touch > 600:
         _last_refresh_touch = now
-        open("/home/ev/maritime-dashboard/refresh_online.trigger", "w").close()
+        open(os.path.join(BASE_DIR, "refresh_online.trigger"), "w").close()
     return jsonify({"ok": True})
 
 
