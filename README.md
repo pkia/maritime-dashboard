@@ -1,6 +1,6 @@
 # Maritime Dashboard
 
-![CI](https://github.com/GH_USER/maritime-dashboard/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/pkia/maritime-dashboard/actions/workflows/ci.yml/badge.svg)
 
 A self-hosted marine situation display for the south coast of Ireland,
 running 24/7 on a Raspberry Pi with a touchscreen kiosk. It combines this
