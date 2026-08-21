@@ -67,7 +67,11 @@ CI runs on every push and pull request (GitHub Actions, Python 3.11 and
 Deployment is **pull-based**: the Pi polls `origin/main` every 3 minutes
 (`deploy/deploy.sh` + systemd timer). A new commit is byte-compiled and
 import-checked *before* the service restarts; if the app then fails its
-health check, the previous commit is automatically redeployed.
+health check, the previous commit is automatically redeployed. Commits
+made directly on the Pi restart the service through the same gate —
+the deploy marker (`.deployed_commit`) tracks what is actually running.
+Unpushed local work is never overwritten, and a commit that failed its
+health check is never retried until a newer commit lands.
 
 ```mermaid
 flowchart LR

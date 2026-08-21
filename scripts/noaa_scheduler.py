@@ -172,7 +172,7 @@ def record_pass(name, freq, start_utc, end_utc):
 
     # Decode: meteor_demod (FM wav -> soft symbols) then meteor_decode (-> image)
     try:
-        r = subprocess.run(["/usr/local/bin/meteor_demod", "-B", "-m", "oqpsk",
+        r = subprocess.run(["/usr/local/bin/meteor_demod", "-B", "-m", "oqpsk", "-s", "288000",
                             "-r", "80000", "-o", sym, wav],
                            capture_output=True, timeout=600)
         if r.returncode == 0 and os.path.exists(sym):
